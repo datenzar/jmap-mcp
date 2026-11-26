@@ -194,6 +194,30 @@ can be connected.
 
 To send email in local mode, add `"env": {"JMAP_MCP_ENABLE_SEND": "true"}` to the server entry.
 
+**Static token.** For an agent without a browser, or a mail server account that should not go
+through OAuth, the local mode also accepts a bearer credential issued by the mail server, such as a
+Stalwart API key. Pass the token in `JMAP_MCP_TOKEN` (or in a file only its owner can read, with
+`--token-file`) and the JMAP session URL with `--session-url`:
+
+```json
+{
+  "mcpServers": {
+    "mail": {
+      "command": "jmap-mcp",
+      "args": ["stdio", "--session-url", "https://mail.example.com/jmap/session"],
+      "env": { "JMAP_MCP_TOKEN": "API_..." }
+    }
+  }
+}
+```
+
+`--session-url` also accepts an email address, from which the session URL is discovered. The
+session is opened at start, so a wrong token or URL stops the server with a message, and the account
+is named after the session's username. The token is never a command-line flag, so that it stays out
+of the process list. Give the key only the permissions the tools need: on Stalwart, a key with
+replaced permissions needs at least `authenticate` (sign in), then for example `jmapMailboxGet`,
+`jmapEmailQuery`, `jmapEmailGet`, `jmapThreadGet` and `jmapBlobGet` for reading.
+
 ### 5. Binary with systemd
 
 ```sh
@@ -307,6 +331,8 @@ environment variable `JMAP_MCP_<FLAG>` (for example `JMAP_MCP_ENABLE_SEND=true`)
 | `--enable-send` | `false` | Register `send_email`. |
 | `--stateless` | `false` | Use stateless MCP Streamable HTTP transport (`serve`) instead of stateful sessions. POST-only; GET and DELETE return 405. |
 | `--allow-private-networks` | `false` | Allow mail servers on private or loopback addresses (for example on the same LAN). It disables part of the SSRF protection. |
+| `--session-url` | | Local mode with a static token: JMAP session URL, or an email address to discover it from. |
+| `--token-file` | | Local mode with a static token: file holding the token, readable only by its owner. `JMAP_MCP_TOKEN` passes the token directly instead. |
 
 Commands: `jmap-mcp` or `jmap-mcp stdio` (local mode), `jmap-mcp serve` (HTTP mode),
 `jmap-mcp client add` (static client for the local mode), `jmap-mcp admin-token`,
