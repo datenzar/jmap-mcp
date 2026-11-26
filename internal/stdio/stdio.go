@@ -5,9 +5,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,10 +34,13 @@ const maxAttachmentFile = 200 << 20
 func Run(ctx context.Context, cfg *config.Config, version string, log *slog.Logger) error {
 	b := &backend{cfg: cfg, log: log}
 	var connector tools.Connector
-	if cfg.DevToken != "" {
-		hc := cfg.Net.Client(60 * time.Second)
-		hc.Transport = &mailauth.BearerTransport{Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.DevToken}), Base: hc.Transport}
-		b.accounts = []*tools.Account{{Email: "dev", Client: &jmapc.Client{HTTP: hc, SessionURL: cfg.DevSessionURL}}}
+	if cfg.Token != "" {
+		acct, err := staticAccount(ctx, cfg, net.DefaultResolver)
+		if err != nil {
+			return err
+		}
+		log.Info("static token account", "account", acct.Email)
+		b.accounts = []*tools.Account{acct}
 	} else {
 		mgr, err := newManager(cfg, log)
 		if err != nil {
@@ -51,6 +57,40 @@ func Run(ctx context.Context, cfg *config.Config, version string, log *slog.Logg
 	srv.Sync(ctx)
 	defer b.cleanup()
 	return srv.Run(ctx, &mcp.StdioTransport{})
+}
+
+// staticAccount builds the single account of a static token. It opens the JMAP session at start,
+// so that a wrong token or URL fails loudly, and names the account after the session's username.
+func staticAccount(ctx context.Context, cfg *config.Config, r jmapc.Resolver) (*tools.Account, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	sessionURL := cfg.SessionURL
+	if !strings.Contains(sessionURL, "://") {
+		u, err := jmapc.DiscoverSession(ctx, cfg.Net.Client(30*time.Second), r, sessionURL)
+		if err != nil {
+			return nil, err
+		}
+		sessionURL = u
+	}
+	hc := cfg.Net.Client(60 * time.Second)
+	hc.Transport = &mailauth.BearerTransport{Source: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.Token}), Base: hc.Transport}
+	c := &jmapc.Client{HTTP: hc, SessionURL: sessionURL}
+	s, err := c.Session(ctx)
+	if err != nil {
+		var he *jmapc.HTTPError
+		if errors.Is(err, jmapc.ErrUnauthorized) {
+			return nil, fmt.Errorf("JMAP session %s: the mail server rejected the token (HTTP 401); check that it is current", sessionURL)
+		}
+		if errors.As(err, &he) && he.Status == http.StatusForbidden {
+			return nil, fmt.Errorf("JMAP session %s: the token is valid but may not open a session; give it the permission to sign in (\"authenticate\" on Stalwart): %w", sessionURL, err)
+		}
+		return nil, fmt.Errorf("JMAP session %s: %w", sessionURL, err)
+	}
+	name := s.Username
+	if name == "" {
+		name = "token"
+	}
+	return &tools.Account{Email: name, Client: c, Default: true}, nil
 }
 
 type backend struct {

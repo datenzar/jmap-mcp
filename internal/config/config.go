@@ -31,9 +31,10 @@ type Config struct {
 	ClientSecret string
 	ClientAuth   string
 
-	// Development and test only.
-	DevToken      string
-	DevSessionURL string
+	// Token is a static bearer credential (an API key or a long-lived access token) for the
+	// local mode; SessionURL is its JMAP session URL, or an email address to discover it from.
+	Token      string
+	SessionURL string
 }
 
 // EnvPrefix prefixes the environment variable form of every flag.
@@ -47,7 +48,7 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 	}
 	fs := flag.NewFlagSet("jmap-mcp", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var level, resolve string
+	var level, resolve, tokenFile, devToken, devSessionURL string
 	str := func(p *string, name, def, usage string) { fs.StringVar(p, name, env(name, def), usage) }
 	boolean := func(p *bool, name, usage string) {
 		v, _ := strconv.ParseBool(env(name, "false"))
@@ -66,10 +67,12 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 	str(&c.ClientID, "client-id", "", "client add: client ID declared at the authorization server")
 	str(&c.ClientSecret, "client-secret", "", "client add: client secret, empty for a public client")
 	str(&c.ClientAuth, "auth-method", "", "client add: none (default without secret), client_secret_basic (default with a secret) or client_secret_post")
-	str(&c.DevToken, "dev-token", "", "development only: static JMAP bearer token (stdio)")
-	str(&c.DevSessionURL, "dev-session-url", "", "development only: JMAP session URL used with --dev-token")
+	str(&c.SessionURL, "session-url", "", "stdio with a static token: JMAP session URL, or an email address to discover it from; proxy: the JMAP session URL")
+	str(&tokenFile, "token-file", "", "stdio with a static token: file holding the bearer token (an API key); "+EnvPrefix+"TOKEN passes it directly")
+	str(&devToken, "dev-token", "", "deprecated: use "+EnvPrefix+"TOKEN or --token-file")
+	str(&devSessionURL, "dev-session-url", "", "deprecated: use --session-url")
 	fs.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: jmap-mcp [stdio|serve|client add|admin-token|healthcheck|version] [flags]\n\n  stdio         MCP server on standard input and output (default)\n  serve         MCP server over HTTP with OAuth\n  client add <email or JMAP session URL> --client-id ID\n                declare a static OAuth client for the local mode\n  admin-token   print the token of the /admin page\n  healthcheck   exit 0 when the local HTTP server answers /healthz\n\nFlags (also read from %s<FLAG_NAME>):\n", EnvPrefix)
+		fmt.Fprintf(stderr, "Usage: jmap-mcp [stdio|serve|proxy|client add|admin-token|healthcheck|version] [flags]\n\n  stdio         MCP server on standard input and output (default)\n  serve         MCP server over HTTP with OAuth\n  proxy         MCP server over HTTP without credentials: each client sends its own mail-server token\n  client add <email or JMAP session URL> --client-id ID\n                declare a static OAuth client for the local mode\n  admin-token   print the token of the /admin page\n  healthcheck   exit 0 when the local HTTP server answers /healthz\n\nFlags (also read from %s<FLAG_NAME>):\n", EnvPrefix)
 		fs.VisitAll(func(f *flag.Flag) {
 			if !strings.HasPrefix(f.Name, "dev-") {
 				fmt.Fprintf(stderr, "  --%s\n    \t%s\n", f.Name, f.Usage)
@@ -98,8 +101,8 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 			c.Net.Resolve[from] = to
 		}
 	}
-	if (c.DevToken == "") != (c.DevSessionURL == "") {
-		return nil, errors.New("--dev-token and --dev-session-url go together")
+	if err := c.staticToken(tokenFile, devToken, devSessionURL); err != nil {
+		return nil, err
 	}
 	if c.DataDir == "" {
 		dir, err := os.UserConfigDir()
@@ -109,6 +112,76 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 		c.DataDir = filepath.Join(dir, "jmap-mcp")
 	}
 	return c, nil
+}
+
+// staticToken settles the static credential of the local mode. The token itself is never a flag,
+// so that it does not show up in the process list: it comes from JMAP_MCP_TOKEN or a file.
+func (c *Config) staticToken(tokenFile, devToken, devSessionURL string) error {
+	envToken, hasEnv := os.LookupEnv(EnvPrefix + "TOKEN")
+	sources := 0
+	for _, set := range []bool{hasEnv && envToken != "", tokenFile != "", devToken != ""} {
+		if set {
+			sources++
+		}
+	}
+	if sources > 1 {
+		return errors.New("give the token once: " + EnvPrefix + "TOKEN, --token-file or --dev-token")
+	}
+	switch {
+	case tokenFile != "":
+		t, err := readTokenFile(tokenFile)
+		if err != nil {
+			return err
+		}
+		c.Token = t
+	case devToken != "":
+		c.Token = devToken
+	default:
+		c.Token = strings.TrimSpace(envToken)
+	}
+	if devSessionURL != "" {
+		if c.SessionURL != "" {
+			return errors.New("--session-url and --dev-session-url are the same setting; keep --session-url")
+		}
+		c.SessionURL = devSessionURL
+	}
+	if c.Command == "proxy" {
+		if c.Token != "" {
+			return errors.New("proxy holds no credential: each MCP client sends its own token; unset the static token")
+		}
+		plainHTTP := c.Net.AllowHTTP && strings.HasPrefix(c.SessionURL, "http://")
+		if !strings.HasPrefix(c.SessionURL, "https://") && !plainHTTP {
+			return errors.New("proxy needs --session-url, the https URL of the JMAP session of the mail server")
+		}
+		return nil
+	}
+	if (c.Token == "") != (c.SessionURL == "") {
+		return errors.New("a static token and --session-url go together")
+	}
+	if c.Token != "" && c.Command != "" && c.Command != "stdio" {
+		return fmt.Errorf("a static token only works in the local mode (stdio), not with %q", c.Command)
+	}
+	return nil
+}
+
+// readTokenFile reads a token that only its owner may read, as ssh does for private keys.
+func readTokenFile(path string) (string, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("token file: %w", err)
+	}
+	if fi.Mode().Perm()&0o077 != 0 {
+		return "", fmt.Errorf("token file %s is readable by others (mode %04o); chmod 600 it", path, fi.Mode().Perm())
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("token file: %w", err)
+	}
+	t := strings.TrimSpace(string(b))
+	if t == "" {
+		return "", fmt.Errorf("token file %s is empty", path)
+	}
+	return t, nil
 }
 
 func env(flagName, def string) string {

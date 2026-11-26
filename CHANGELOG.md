@@ -10,6 +10,16 @@ All notable changes to this project are documented here. The format follows
 
 - Optional stateless Streamable HTTP transport for `serve`, enabled with `--stateless` or
   `JMAP_MCP_STATELESS=true`.
+- Static bearer token for the local mode, such as a Stalwart API key: `JMAP_MCP_TOKEN` or
+  `--token-file`, with `--session-url` (a session URL or an email address to discover it from). The
+  session is opened at start and the account is named after its username.
+- `jmap-mcp proxy`: MCP over stateless HTTP without any stored credential. Each request carries the
+  caller's own mail-server API key, which is checked against the mail server, cached briefly and sent
+  only to the origin of `--session-url`; failed attempts lock a client out.
+
+### Deprecated
+
+- `--dev-token` and `--dev-session-url`, replaced by the static token options above.
 
 ## [0.3.0] - 2026-10-24
 
