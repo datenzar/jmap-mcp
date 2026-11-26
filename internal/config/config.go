@@ -104,7 +104,8 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 	if err := c.staticToken(tokenFile, devToken, devSessionURL); err != nil {
 		return nil, err
 	}
-	if c.DataDir == "" {
+	// The proxy keeps no state, so it must start without one, as a system service with no home does.
+	if c.DataDir == "" && c.Command != "proxy" {
 		dir, err := os.UserConfigDir()
 		if err != nil {
 			return nil, fmt.Errorf("no data directory: pass --data-dir (%w)", err)
