@@ -16,6 +16,15 @@ func TestStalwartReadTools(t *testing.T) {
 	readScenario(t, &Account{Email: alice, Client: sw.Login(t, alice, "alice-password-1")})
 }
 
+func TestStalwartSharedAccount(t *testing.T) {
+	sw := testenv.Start(t)
+	alice := sw.CreateUser(t, "alice", "alice-password-1")
+	bob := sw.CreateUser(t, "bob", "bob-password-1")
+	sw.Seed(t, bob, "bob-password-1", testenv.Fixtures...)
+	sw.ShareInbox(t, bob, "bob-password-1", alice, "alice-password-1")
+	sharedScenario(t, &Account{Email: alice, Client: sw.Login(t, alice, "alice-password-1")}, bob)
+}
+
 func TestStalwartWriteTools(t *testing.T) {
 	sw := testenv.Start(t)
 	alice := sw.CreateUser(t, "alice", "alice-password-1")

@@ -10,17 +10,16 @@
     ],
     "methodCalls": [
       [
-        "Email/get",
+        "Email/set",
         {
           "accountId": "c",
-          "ids": [
-            "eaaaaab"
-          ],
-          "properties": [
-            "id",
-            "subject",
-            "from"
-          ]
+          "update": {
+            "eaaaaab": {
+              "mailboxIds": {
+                "i": true
+              }
+            }
+          }
         },
         "0"
       ]
@@ -29,27 +28,18 @@
   "response": {
     "methodResponses": [
       [
-        "Email/get",
+        "Email/set",
         {
           "accountId": "c",
-          "state": "sbu",
-          "list": [
-            {
-              "id": "eaaaaab",
-              "subject": "Quarterly report",
-              "from": [
-                {
-                  "name": "Bob Martin",
-                  "email": "bob@example.org"
-                }
-              ]
-            }
-          ],
-          "notFound": []
+          "oldState": "sbm",
+          "newState": "sby",
+          "updated": {
+            "eaaaaab": null
+          }
         },
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

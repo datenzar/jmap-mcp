@@ -39,15 +39,15 @@ converted to text and truncated with an explicit flag.
 
 | Tool | What it does |
 |---|---|
-| `list_accounts` | Connected accounts and the default one (`set_default` changes it). |
+| `list_accounts` | Connected accounts, the default one (`set_default` changes it), and the shared mail accounts each can access. |
 | `connect_account` | Local mode only: connect an account from an email address (browser or device code). |
 | `list_mailboxes` | Mailboxes with role (inbox, sent, drafts, trash, archive, junk), path, total and unread counts. |
 | `list_identities` | Sender identities. Registered when the server announces submission. |
-| `search_emails` | Text, sender, recipient, subject, mailbox, dates, unread, flagged, attachments, size; sort; position and limit. Returns summaries. |
+| `search_emails` | Text, sender, recipient, subject, mailbox, dates, unread, flagged, keyword, attachments, size; sort; position and limit. Returns summaries. |
 | `get_email` | Headers, plain-text body (HTML converted when there is no text part), attachment list. `max_body_length`. |
 | `get_thread` | A conversation in order, as summaries or full messages. |
 | `get_attachment` | Text and small images inline; otherwise a signed URL valid 15 minutes (HTTP mode) or a private temporary file (local mode). |
-| `update_emails` | Read, unread, flagged, unflagged. |
+| `update_emails` | Read, unread, flagged, unflagged; add or remove keywords (tags such as `$label:invoices`). |
 | `move_emails` | Move to a mailbox given by id, role or name. |
 | `create_folder` | Create a folder, at the top level or inside a parent given by id, role or name. |
 | `delete_emails` | Trash by default; `permanent` destroys after the user's confirmation. |
@@ -58,6 +58,16 @@ converted to text and truncated with an explicit flag.
 
 The resource `jmap-mcp://status` describes the connected accounts, the discovered servers and the
 capabilities they announce.
+
+**Shared accounts.** Besides its own mailbox, a login often reaches other mail accounts: a mailbox
+another user shares, a group mailbox. `list_accounts` lists them under each login, and every tool
+accepts one of their names as `account`. The name is resolved through the login that can access it
+(the default one when several can), and the server's own permissions decide what is allowed.
+
+**Keywords.** Summaries and messages list the keywords of an email other than the system ones
+already shown as flags. `update_emails` adds and removes keywords one by one, never replacing the
+whole set, and `search_emails` filters on them (`keyword`, `not_keyword`). Some webmails show
+keywords as labels, Stalwart's for instance those of the form `$label:<name>`.
 
 Email content is treated as untrusted data: it is returned to the model as data, never interpreted,
 and the tool descriptions tell the model that emails may contain instructions it must ignore.
@@ -449,7 +459,8 @@ accounts, import sample messages and run the real OAuth flows (browser, device, 
 the MCP SDK client). They also switch Stalwart to an OIDC directory backed by a minimal OpenID
 provider (`internal/testenv/idp.go`) to cover the static client of both modes. The unit tests replay JMAP exchanges recorded from those runs; refresh them
 with `JMAP_MCP_RECORD=$PWD/internal/tools/testdata/read go test -tags integration -run TestStalwartReadTools ./internal/tools`
-(and `write` / `TestStalwartWriteTools`).
+(and `write` / `TestStalwartWriteTools`, `shared` / `TestStalwartSharedAccount`). The recorder
+writes into an existing directory only.
 
 The layout: `internal/jmapc` (JMAP client and discovery), `internal/mailauth` (OAuth client of the
 mail server), `internal/mailview` (compact email views), `internal/tools` (MCP tools),

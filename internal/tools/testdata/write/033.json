@@ -14,7 +14,7 @@
         {
           "accountId": "c",
           "ids": [
-            "maaaaah"
+            "maaaaad"
           ],
           "properties": [
             "id",
@@ -53,7 +53,7 @@
           ],
           "fetchTextBodyValues": true,
           "fetchHTMLBodyValues": true,
-          "maxBodyValueBytes": 41024
+          "maxBodyValueBytes": 81024
         },
         "0"
       ]
@@ -68,27 +68,24 @@
           "state": "sca",
           "list": [
             {
-              "id": "maaaaah",
+              "id": "maaaaad",
               "threadId": "d",
               "mailboxIds": {
-                "d": true
+                "a": true
               },
-              "keywords": {
-                "$draft": true,
-                "$seen": true
-              },
-              "receivedAt": "2026-10-23T22:17:45Z",
-              "sentAt": "2026-10-20T12:00:00Z",
+              "keywords": {},
+              "receivedAt": "2026-10-07T08:00:00Z",
+              "sentAt": "2026-10-07T08:00:00Z",
               "from": [
                 {
-                  "name": "alice@example.test",
-                  "email": "alice@example.test"
+                  "name": "Carol",
+                  "email": "carol@example.org"
                 }
               ],
               "to": [
                 {
-                  "name": "Carol",
-                  "email": "carol@example.org"
+                  "name": "Alice",
+                  "email": "alice@example.test"
                 }
               ],
               "cc": [
@@ -100,21 +97,17 @@
               "bcc": null,
               "replyTo": null,
               "sender": null,
-              "subject": "Re: Project kickoff",
+              "subject": "Project kickoff",
               "messageId": [
-                "18e148859ca74932.ec258dc360103609.5ff86f083cdfcca9@mail.example.test"
-              ],
-              "inReplyTo": [
                 "kickoff-1@example.org"
               ],
-              "references": [
-                "kickoff-1@example.org"
-              ],
+              "inReplyTo": null,
+              "references": null,
               "textBody": [
                 {
-                  "partId": "1",
-                  "blobId": "cfyosazhj2vlpuwti731w3dv9rhpx0at7dmwqli3xgwybplh2hsxoaqaa3iajaqb",
-                  "size": 130,
+                  "partId": "0",
+                  "blobId": "cemolkyexux021zvar9ipsbywkowq3rxisdrepg3tuaoismggzz7iaqaapxqcli",
+                  "size": 45,
                   "name": null,
                   "type": "text/plain",
                   "charset": "utf-8",
@@ -124,9 +117,9 @@
               ],
               "htmlBody": [
                 {
-                  "partId": "1",
-                  "blobId": "cfyosazhj2vlpuwti731w3dv9rhpx0at7dmwqli3xgwybplh2hsxoaqaa3iajaqb",
-                  "size": 130,
+                  "partId": "0",
+                  "blobId": "cemolkyexux021zvar9ipsbywkowq3rxisdrepg3tuaoismggzz7iaqaapxqcli",
+                  "size": 45,
                   "name": null,
                   "type": "text/plain",
                   "charset": "utf-8",
@@ -134,28 +127,17 @@
                   "cid": null
                 }
               ],
-              "attachments": [
-                {
-                  "partId": "2",
-                  "blobId": "cjyosazhj2vlpuwti731w3dv9rhpx0at7dmwqli3xgwybplh2hsxoaqaa1fqogi",
-                  "size": 21,
-                  "name": "agenda.txt",
-                  "type": "text/plain",
-                  "charset": "us-ascii",
-                  "disposition": "attachment",
-                  "cid": null
-                }
-              ],
+              "attachments": [],
               "bodyValues": {
-                "1": {
+                "0": {
                   "isEncodingProblem": false,
                   "isTruncated": false,
-                  "value": "See you Friday.\n\nOn Wed, 7 Oct 2026 08:00 UTC, Carol \u003ccarol@example.org\u003e wrote:\n\u003e Can we meet on Friday to start the project?\n"
+                  "value": "Can we meet on Friday to start the project?\n"
                 }
               },
-              "size": 990,
-              "hasAttachment": true,
-              "preview": "See you Friday.\n\nOn Wed, 7 Oct 2026 08:00 UTC, Carol \u003ccarol@example.org\u003e wrote:\n\u003e Can we meet on Friday to start the project?\n"
+              "size": 284,
+              "hasAttachment": false,
+              "preview": "Can we meet on Friday to start the project?\n"
             }
           ],
           "notFound": []
@@ -163,6 +145,6 @@
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

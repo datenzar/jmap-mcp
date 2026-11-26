@@ -30,9 +30,11 @@ const maxIDs = 200
 
 func (s *Server) registerWriteTools() {
 	mcp.AddTool(s.Server, &mcp.Tool{
-		Name:        "update_emails",
-		Description: "Mark emails as read or unread, flagged or unflagged.",
-		Annotations: &mcp.ToolAnnotations{Title: "Update flags", IdempotentHint: true, DestructiveHint: ptr(false)},
+		Name: "update_emails",
+		Description: "Mark emails as read or unread, flagged or unflagged, and add or remove keywords. Keywords are tags such as " +
+			"\"$label:invoices\", which some webmails (Stalwart's among them) show as labels; they are case-insensitive and stored in lower case. " +
+			"Other keywords are left untouched.",
+		Annotations: &mcp.ToolAnnotations{Title: "Update flags and keywords", IdempotentHint: true, DestructiveHint: ptr(false)},
 	}, handler(s.updateEmails))
 
 	mcp.AddTool(s.Server, &mcp.Tool{
@@ -63,10 +65,71 @@ func (s *Server) registerWriteTools() {
 }
 
 type updateInput struct {
-	Account string   `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
-	IDs     []string `json:"ids" jsonschema:"email ids"`
-	Read    *bool    `json:"read,omitempty" jsonschema:"true to mark as read, false to mark as unread"`
-	Flagged *bool    `json:"flagged,omitempty" jsonschema:"true to flag, false to unflag"`
+	Account        string   `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
+	IDs            []string `json:"ids" jsonschema:"email ids"`
+	Read           *bool    `json:"read,omitempty" jsonschema:"true to mark as read, false to mark as unread"`
+	Flagged        *bool    `json:"flagged,omitempty" jsonschema:"true to flag, false to unflag"`
+	AddKeywords    []string `json:"add_keywords,omitempty" jsonschema:"keywords to add, for example $label:invoices"`
+	RemoveKeywords []string `json:"remove_keywords,omitempty" jsonschema:"keywords to remove"`
+}
+
+// maxKeywordLen is the longest keyword RFC 8621 §4.1.1 allows.
+const maxKeywordLen = 255
+
+// normalizeKeyword checks a keyword against RFC 8621 §4.1.1 and returns it in lower case.
+func normalizeKeyword(k string) (string, error) {
+	if k == "" || len(k) > maxKeywordLen {
+		return "", fmt.Errorf("invalid keyword %q: it must be 1 to %d characters long", k, maxKeywordLen)
+	}
+	for _, r := range k {
+		if r < 0x21 || r > 0x7e || strings.ContainsRune(`(){]%*"\`, r) {
+			return "", fmt.Errorf("invalid keyword %q: use printable ASCII without spaces or any of ( ) { ] %% * \" \\", k)
+		}
+	}
+	return strings.ToLower(k), nil
+}
+
+// keywordPath is the patch path of one keyword, escaped as a JSON Pointer token (RFC 6901).
+func keywordPath(k string) string {
+	return "keywords/" + strings.NewReplacer("~", "~0", "/", "~1").Replace(k)
+}
+
+// keywordPatch builds the Email/set patch of update_emails. Each keyword is patched on its own,
+// since replacing the whole keywords object would drop every keyword it does not list.
+func keywordPatch(in updateInput) (jmap.Patch, error) {
+	patch := jmap.Patch{}
+	set := func(k string, v bool) error {
+		p := keywordPath(k)
+		if old, ok := patch[p]; ok && old != keyword(v) {
+			return fmt.Errorf("keyword %q is both added and removed", k)
+		}
+		patch[p] = keyword(v)
+		return nil
+	}
+	if in.Read != nil {
+		_ = set("$seen", *in.Read)
+	}
+	if in.Flagged != nil {
+		_ = set("$flagged", *in.Flagged)
+	}
+	for _, list := range []struct {
+		kws []string
+		add bool
+	}{{in.AddKeywords, true}, {in.RemoveKeywords, false}} {
+		for _, k := range list.kws {
+			n, err := normalizeKeyword(k)
+			if err != nil {
+				return nil, err
+			}
+			if err := set(n, list.add); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if len(patch) == 0 {
+		return nil, errors.New("set read, flagged, add_keywords or remove_keywords")
+	}
+	return patch, nil
 }
 
 func checkIDs(ids []string) error {
@@ -113,15 +176,9 @@ func (s *Server) updateEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 	if err := checkIDs(in.IDs); err != nil {
 		return nil, err
 	}
-	patch := jmap.Patch{}
-	if in.Read != nil {
-		patch["keywords/$seen"] = keyword(*in.Read)
-	}
-	if in.Flagged != nil {
-		patch["keywords/$flagged"] = keyword(*in.Flagged)
-	}
-	if len(patch) == 0 {
-		return nil, errors.New("set read and/or flagged")
+	patch, err := keywordPatch(in)
+	if err != nil {
+		return nil, err
 	}
 	m, res, err := s.mail(ctx, newDialog(req), in.Account)
 	if err != nil || res != nil {
@@ -135,7 +192,7 @@ func (s *Server) updateEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 }
 
 type moveInput struct {
-	Account string   `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account string   `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	IDs     []string `json:"ids" jsonschema:"email ids"`
 	Mailbox string   `json:"mailbox" jsonschema:"target mailbox: id, role (inbox, archive, junk, trash...) or name"`
 }
@@ -165,7 +222,7 @@ func (s *Server) moveEmails(ctx context.Context, req *mcp.CallToolRequest, in mo
 }
 
 type createFolderInput struct {
-	Account string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	Name    string `json:"name" jsonschema:"name of the new folder"`
 	Parent  string `json:"parent,omitempty" jsonschema:"parent mailbox: id, role or name; empty for a top-level folder"`
 }
@@ -216,7 +273,7 @@ func (s *Server) createFolder(ctx context.Context, req *mcp.CallToolRequest, in 
 }
 
 type deleteInput struct {
-	Account   string   `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account   string   `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	IDs       []string `json:"ids" jsonschema:"email ids"`
 	Permanent bool     `json:"permanent,omitempty" jsonschema:"destroy the emails instead of moving them to the trash"`
 	Confirm   bool     `json:"confirm,omitempty" jsonschema:"only when the client cannot ask the user itself: set it after the user explicitly approved the permanent deletion"`
@@ -287,7 +344,7 @@ func (s *Server) deleteEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 		}
 		lines = append(lines, fmt.Sprintf("- %q from %s", e.Subject, from))
 	}
-	msg := fmt.Sprintf("Permanently delete %d email(s) from %s? This cannot be undone.\n%s", len(g.List), m.acct.Email, strings.Join(lines, "\n"))
+	msg := fmt.Sprintf("Permanently delete %d email(s) from %s? This cannot be undone.\n%s", len(g.List), m.name, strings.Join(lines, "\n"))
 	if res, err := confirmOrArg(ctx, d, "confirm_delete", msg, in.Confirm, "Permanent deletion"); err != nil || res != nil {
 		return res, err
 	}
@@ -316,7 +373,7 @@ type attachmentInput struct {
 }
 
 type draftInput struct {
-	Account     string            `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account     string            `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	Identity    string            `json:"identity,omitempty" jsonschema:"sender identity id or email address (see list_identities)"`
 	To          []string          `json:"to,omitempty" jsonschema:"recipients, as address or Name <address>; for a reply, defaults to the original sender"`
 	Cc          []string          `json:"cc,omitempty" jsonschema:"copy recipients"`
@@ -353,7 +410,7 @@ func (m *mailContext) pickIdentity(ctx context.Context, d *dialog, want string, 
 		if want != "" {
 			return nil, nil, errors.New("this account has no sender identities")
 		}
-		return &identity.Identity{Email: m.acct.Email}, nil, nil
+		return &identity.Identity{Email: m.name}, nil, nil
 	}
 	labels := make([]string, len(ids))
 	for i, id := range ids {
@@ -524,7 +581,7 @@ func (s *Server) compose(ctx context.Context, d *dialog, m *mailContext, in draf
 	if err != nil || res != nil {
 		return nil, res, err
 	}
-	own := []string{id.Email, m.acct.Email}
+	own := []string{id.Email, m.name, m.acct.Email}
 	if orig != nil {
 		if len(to) == 0 {
 			to = orig.ReplyTo
@@ -657,7 +714,7 @@ func (s *Server) registerSend() {
 }
 
 type sendInput struct {
-	Account     string            `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account     string            `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	DraftID     string            `json:"draft_id,omitempty" jsonschema:"id of an existing draft to send; when set, the composition fields are ignored"`
 	Identity    string            `json:"identity,omitempty" jsonschema:"sender identity id or email address (see list_identities)"`
 	To          []string          `json:"to,omitempty" jsonschema:"recipients, as address or Name <address>"`

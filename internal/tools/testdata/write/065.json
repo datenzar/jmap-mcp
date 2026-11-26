@@ -13,7 +13,13 @@
         "SieveScript/set",
         {
           "accountId": "c",
-          "onSuccessDeactivateScript": true
+          "create": {
+            "new": {
+              "name": "newsletters",
+              "blobId": "edknvyopkkglsxnau2kvit2bdndxgpgwcmnnqftxyistjbirpnwvuaxe3sp0qbq"
+            }
+          },
+          "onSuccessActivateScript": "#new"
         },
         "0"
       ]
@@ -25,12 +31,19 @@
         "SieveScript/set",
         {
           "accountId": "c",
-          "oldState": "sda",
-          "newState": "sda"
+          "oldState": "sde",
+          "newState": "sdi",
+          "created": {
+            "new": {
+              "id": "c",
+              "blobId": "cgksniwutpd9zowz0elqtyj9bd2bmqaxhuw7h0vsqgrsudai1mao7aqfaiafo",
+              "isActive": true
+            }
+          }
         },
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

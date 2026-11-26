@@ -6,11 +6,11 @@
   "request": {
     "using": [
       "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:sieve"
+      "urn:ietf:params:jmap:submission"
     ],
     "methodCalls": [
       [
-        "SieveScript/get",
+        "Identity/get",
         {
           "accountId": "c"
         },
@@ -21,16 +21,20 @@
   "response": {
     "methodResponses": [
       [
-        "SieveScript/get",
+        "Identity/get",
         {
           "accountId": "c",
-          "state": "sc2",
+          "state": "sce",
           "list": [
             {
               "id": "b",
-              "name": "vacation",
-              "blobId": "cffl371evjql1zja0aiunlnutlt1qpfhorq9kxlhcd0sri02jccv1aqfaeapgai",
-              "isActive": true
+              "name": "alice@example.test",
+              "email": "alice@example.test",
+              "replyTo": null,
+              "bcc": null,
+              "textSignature": "",
+              "htmlSignature": "",
+              "mayDelete": true
             }
           ],
           "notFound": []
@@ -38,6 +42,6 @@
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

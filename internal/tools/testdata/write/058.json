@@ -10,10 +10,9 @@
     ],
     "methodCalls": [
       [
-        "SieveScript/validate",
+        "SieveScript/get",
         {
-          "accountId": "c",
-          "blobId": "edknvyopkkglsxnau2kvit2bdndxgpgwcmnnqftxyistjbirpnwvuauz79x0mbq"
+          "accountId": "c"
         },
         "0"
       ]
@@ -22,14 +21,23 @@
   "response": {
     "methodResponses": [
       [
-        "SieveScript/validate",
+        "SieveScript/get",
         {
           "accountId": "c",
-          "error": null
+          "state": "sde",
+          "list": [
+            {
+              "id": "b",
+              "name": "vacation",
+              "blobId": "cffl371evjql1zja0aiunlnutlt1qpfhorq9kxlhcd0sri02jccv1aqfaeapgai",
+              "isActive": true
+            }
+          ],
+          "notFound": []
         },
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

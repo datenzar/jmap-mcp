@@ -6,54 +6,13 @@
   "request": {
     "using": [
       "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:mail"
+      "urn:ietf:params:jmap:submission"
     ],
     "methodCalls": [
       [
-        "Email/get",
+        "Identity/get",
         {
-          "accountId": "c",
-          "ids": [
-            "beaaaaaj"
-          ],
-          "properties": [
-            "id",
-            "threadId",
-            "mailboxIds",
-            "keywords",
-            "receivedAt",
-            "sentAt",
-            "from",
-            "to",
-            "cc",
-            "bcc",
-            "replyTo",
-            "sender",
-            "subject",
-            "messageId",
-            "inReplyTo",
-            "references",
-            "textBody",
-            "htmlBody",
-            "attachments",
-            "bodyValues",
-            "size",
-            "hasAttachment",
-            "preview"
-          ],
-          "bodyProperties": [
-            "partId",
-            "blobId",
-            "size",
-            "name",
-            "type",
-            "charset",
-            "disposition",
-            "cid"
-          ],
-          "fetchTextBodyValues": true,
-          "fetchHTMLBodyValues": true,
-          "maxBodyValueBytes": 81024
+          "accountId": "c"
         },
         "0"
       ]
@@ -62,80 +21,20 @@
   "response": {
     "methodResponses": [
       [
-        "Email/get",
+        "Identity/get",
         {
           "accountId": "c",
-          "state": "scq",
+          "state": "sce",
           "list": [
             {
-              "id": "beaaaaaj",
-              "threadId": "j",
-              "mailboxIds": {
-                "d": true
-              },
-              "keywords": {
-                "$draft": true,
-                "$seen": true
-              },
-              "receivedAt": "2026-10-23T22:17:45Z",
-              "sentAt": "2026-10-20T12:00:00Z",
-              "from": [
-                {
-                  "name": "alice@example.test",
-                  "email": "alice@example.test"
-                }
-              ],
-              "to": [
-                {
-                  "name": null,
-                  "email": "bob@example.test"
-                }
-              ],
-              "cc": null,
-              "bcc": null,
+              "id": "b",
+              "name": "alice@example.test",
+              "email": "alice@example.test",
               "replyTo": null,
-              "sender": null,
-              "subject": "Draft then send",
-              "messageId": [
-                "18e148859d5120cc.15d3d1703e85e42a.96a79152cd4c94c@mail.example.test"
-              ],
-              "inReplyTo": null,
-              "references": null,
-              "textBody": [
-                {
-                  "partId": "0",
-                  "blobId": "cgdanjla1cx777mu2dtnlrztliaid2yygwirlpwuoitygusfwm9x7aqabg3aebi",
-                  "size": 5,
-                  "name": null,
-                  "type": "text/plain",
-                  "charset": "utf-8",
-                  "disposition": null,
-                  "cid": null
-                }
-              ],
-              "htmlBody": [
-                {
-                  "partId": "0",
-                  "blobId": "cgdanjla1cx777mu2dtnlrztliaid2yygwirlpwuoitygusfwm9x7aqabg3aebi",
-                  "size": 5,
-                  "name": null,
-                  "type": "text/plain",
-                  "charset": "utf-8",
-                  "disposition": null,
-                  "cid": null
-                }
-              ],
-              "attachments": [],
-              "bodyValues": {
-                "0": {
-                  "isEncodingProblem": false,
-                  "isTruncated": false,
-                  "value": "Hello"
-                }
-              },
-              "size": 323,
-              "hasAttachment": false,
-              "preview": "Hello"
+              "bcc": null,
+              "textSignature": "",
+              "htmlSignature": "",
+              "mayDelete": true
             }
           ],
           "notFound": []
@@ -143,6 +42,6 @@
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

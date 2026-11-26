@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 - `jmap-mcp proxy`: MCP over stateless HTTP without any stored credential. Each request carries the
   caller's own mail-server API key, which is checked against the mail server, cached briefly and sent
   only to the origin of `--session-url`; failed attempts lock a client out.
+- Shared mail accounts: `list_accounts` lists the mail accounts each login can access besides its
+  own (mailboxes shared by other users, group mailboxes), and every tool accepts their name as
+  `account`.
+- Keywords: `update_emails` adds and removes keywords (`add_keywords`, `remove_keywords`), such as
+  the `$label:<name>` tags of Stalwart's webmail; `search_emails` filters on them (`keyword`,
+  `not_keyword`); summaries and messages list them.
 
 ### Deprecated
 

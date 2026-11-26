@@ -10,139 +10,70 @@
     ],
     "methodCalls": [
       [
-        "Email/query",
+        "Email/set",
         {
           "accountId": "c",
-          "filter": {
-            "inMailbox": "e"
-          },
-          "sort": [
-            {
-              "property": "receivedAt",
-              "isAscending": false
+          "create": {
+            "draft": {
+              "mailboxIds": {
+                "d": true
+              },
+              "keywords": {
+                "$draft": true,
+                "$seen": true
+              },
+              "from": [
+                {
+                  "name": "alice@example.test",
+                  "email": "alice@example.test"
+                }
+              ],
+              "to": [
+                {
+                  "email": "bob@example.test"
+                }
+              ],
+              "subject": "Draft then send",
+              "sentAt": "2026-10-20T12:00:00Z",
+              "bodyValues": {
+                "body": {
+                  "value": "Hello",
+                  "isTruncated": false
+                }
+              },
+              "textBody": [
+                {
+                  "partId": "body",
+                  "type": "text/plain"
+                }
+              ]
             }
-          ],
-          "limit": 20,
-          "calculateTotal": true
-        },
-        "0"
-      ],
-      [
-        "Email/get",
-        {
-          "accountId": "c",
-          "properties": [
-            "id",
-            "threadId",
-            "mailboxIds",
-            "keywords",
-            "receivedAt",
-            "from",
-            "to",
-            "subject",
-            "preview",
-            "hasAttachment",
-            "attachments",
-            "size"
-          ],
-          "bodyProperties": [
-            "blobId"
-          ],
-          "#ids": {
-            "resultOf": "0",
-            "name": "Email/query",
-            "path": "/ids"
           }
         },
-        "1"
+        "0"
       ]
     ]
   },
   "response": {
     "methodResponses": [
       [
-        "Email/query",
+        "Email/set",
         {
           "accountId": "c",
-          "queryState": "scy",
-          "canCalculateChanges": true,
-          "position": 0,
-          "ids": [
-            "baaaaaai",
-            "beaaaaaj"
-          ],
-          "total": 2
-        },
-        "0"
-      ],
-      [
-        "Email/get",
-        {
-          "accountId": "c",
-          "state": "scy",
-          "list": [
-            {
-              "id": "baaaaaai",
-              "threadId": "i",
-              "mailboxIds": {
-                "e": true
-              },
-              "keywords": {
-                "$seen": true
-              },
-              "receivedAt": "2026-10-23T22:17:45Z",
-              "from": [
-                {
-                  "name": "alice@example.test",
-                  "email": "alice@example.test"
-                }
-              ],
-              "to": [
-                {
-                  "name": "Bob",
-                  "email": "bob@example.test"
-                }
-              ],
-              "subject": "Lunch?",
-              "preview": "Noon?",
-              "hasAttachment": false,
-              "attachments": [],
-              "size": 320
-            },
-            {
+          "oldState": "scu",
+          "newState": "scy",
+          "created": {
+            "draft": {
               "id": "beaaaaaj",
               "threadId": "j",
-              "mailboxIds": {
-                "e": true
-              },
-              "keywords": {
-                "$seen": true
-              },
-              "receivedAt": "2026-10-23T22:17:45Z",
-              "from": [
-                {
-                  "name": "alice@example.test",
-                  "email": "alice@example.test"
-                }
-              ],
-              "to": [
-                {
-                  "name": null,
-                  "email": "bob@example.test"
-                }
-              ],
-              "subject": "Draft then send",
-              "preview": "Hello",
-              "hasAttachment": false,
-              "attachments": [],
-              "size": 323
+              "blobId": "cbh3pjz3yry1yhpfsdgmtu7hr0nxp1qzfcdkgwpiwkheuxnknxn2saqabe",
+              "size": 324
             }
-          ],
-          "notFound": []
+          }
         },
-        "1"
+        "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }
