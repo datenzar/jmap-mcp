@@ -106,6 +106,15 @@ func TestProxyConfig(t *testing.T) {
 	if err != nil || c.Command != "proxy" || c.SessionURL != url || c.Token != "" {
 		t.Fatalf("%+v %v", c, err)
 	}
+	// A system service with a dynamic user has no home and no data directory; the proxy needs neither.
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
+	if c, err := Parse([]string{"proxy", "--session-url", url}, io.Discard); err != nil || c.DataDir != "" {
+		t.Fatalf("proxy without a home: %+v %v", c, err)
+	}
+	if _, err := Parse([]string{"serve"}, io.Discard); err == nil {
+		t.Fatal("serve without a home and --data-dir must fail")
+	}
 	for name, tc := range map[string]struct {
 		env  string
 		args []string
