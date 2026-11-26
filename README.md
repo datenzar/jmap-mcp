@@ -230,6 +230,43 @@ The unit listens on `127.0.0.1:8080` with a dynamic user and its state in `/var/
 a TLS reverse proxy in front of it (any proxy that sends `X-Forwarded-Proto` and
 `X-Forwarded-Host`), or set `JMAP_MCP_PUBLIC_URL`.
 
+### 6. Proxy for API keys (no OAuth, no state)
+
+`jmap-mcp proxy` serves MCP over HTTP without holding any credential: every request carries the
+caller's own API key of the mail server as a bearer token, and the proxy uses it for that caller's
+JMAP calls only. It keeps no database and no secret, which suits agents that are given a key
+directly. Clients that sign in with OAuth, such as ChatGPT, need `serve` instead.
+
+```sh
+jmap-mcp proxy --session-url https://mail.example.com/jmap/session --listen 127.0.0.1:8090
+```
+
+```json
+{
+  "mcpServers": {
+    "mail": { "type": "http", "url": "https://mcp.example.com/keys/mcp",
+              "headers": { "Authorization": "Bearer API_..." } }
+  }
+}
+```
+
+- Only tokens starting with `API_` (Stalwart API keys) are accepted; anything else gets a 401
+  without reaching the mail server. A key is checked by opening its JMAP session, then cached for
+  up to 15 minutes, so a revoked key stops working within that time. A rejected key is remembered
+  for 5 minutes.
+- Every request goes to the origin of `--session-url` only; a session document naming another host
+  is refused, so the key cannot be sent elsewhere.
+- Ten failed attempts from one client within 10 minutes lock it out for 15 minutes. Behind a reverse
+  proxy on a private or loopback address, the client is taken from `X-Forwarded-For`. The mail
+  server sees every request coming from the proxy, so its own brute-force protection does not apply
+  on this path.
+- The transport is stateless Streamable HTTP. Confirmations use multi round-trip requests, so they
+  need clients on protocol 2026-07-28; older clients pass `confirm=true` instead. Attachments too
+  large to return inline are not available, since a download link would need stored state or the key.
+- This is token passthrough, which the MCP authorization specification forbids for OAuth tokens that
+  clients obtain for the MCP server. Use it only with keys you hand to the client yourself, and give
+  each key only the permissions it needs.
+
 ## Preparing the mail server
 
 **Discovery.** The JMAP server is found from the email domain, as RFC 8620 §2.2 describes: an SRV
@@ -334,7 +371,8 @@ environment variable `JMAP_MCP_<FLAG>` (for example `JMAP_MCP_ENABLE_SEND=true`)
 | `--session-url` | | Local mode with a static token: JMAP session URL, or an email address to discover it from. |
 | `--token-file` | | Local mode with a static token: file holding the token, readable only by its owner. `JMAP_MCP_TOKEN` passes the token directly instead. |
 
-Commands: `jmap-mcp` or `jmap-mcp stdio` (local mode), `jmap-mcp serve` (HTTP mode),
+Commands: `jmap-mcp` or `jmap-mcp stdio` (local mode), `jmap-mcp serve` (HTTP mode), `jmap-mcp proxy`
+(HTTP without credentials, see above),
 `jmap-mcp client add` (static client for the local mode), `jmap-mcp admin-token`,
 `jmap-mcp healthcheck`, `jmap-mcp version`.
 

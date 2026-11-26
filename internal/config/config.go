@@ -67,12 +67,12 @@ func Parse(args []string, stderr io.Writer) (*Config, error) {
 	str(&c.ClientID, "client-id", "", "client add: client ID declared at the authorization server")
 	str(&c.ClientSecret, "client-secret", "", "client add: client secret, empty for a public client")
 	str(&c.ClientAuth, "auth-method", "", "client add: none (default without secret), client_secret_basic (default with a secret) or client_secret_post")
-	str(&c.SessionURL, "session-url", "", "stdio with a static token: JMAP session URL, or an email address to discover it from")
+	str(&c.SessionURL, "session-url", "", "stdio with a static token: JMAP session URL, or an email address to discover it from; proxy: the JMAP session URL")
 	str(&tokenFile, "token-file", "", "stdio with a static token: file holding the bearer token (an API key); "+EnvPrefix+"TOKEN passes it directly")
 	str(&devToken, "dev-token", "", "deprecated: use "+EnvPrefix+"TOKEN or --token-file")
 	str(&devSessionURL, "dev-session-url", "", "deprecated: use --session-url")
 	fs.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: jmap-mcp [stdio|serve|client add|admin-token|healthcheck|version] [flags]\n\n  stdio         MCP server on standard input and output (default)\n  serve         MCP server over HTTP with OAuth\n  client add <email or JMAP session URL> --client-id ID\n                declare a static OAuth client for the local mode\n  admin-token   print the token of the /admin page\n  healthcheck   exit 0 when the local HTTP server answers /healthz\n\nFlags (also read from %s<FLAG_NAME>):\n", EnvPrefix)
+		fmt.Fprintf(stderr, "Usage: jmap-mcp [stdio|serve|proxy|client add|admin-token|healthcheck|version] [flags]\n\n  stdio         MCP server on standard input and output (default)\n  serve         MCP server over HTTP with OAuth\n  proxy         MCP server over HTTP without credentials: each client sends its own mail-server token\n  client add <email or JMAP session URL> --client-id ID\n                declare a static OAuth client for the local mode\n  admin-token   print the token of the /admin page\n  healthcheck   exit 0 when the local HTTP server answers /healthz\n\nFlags (also read from %s<FLAG_NAME>):\n", EnvPrefix)
 		fs.VisitAll(func(f *flag.Flag) {
 			if !strings.HasPrefix(f.Name, "dev-") {
 				fmt.Fprintf(stderr, "  --%s\n    \t%s\n", f.Name, f.Usage)
@@ -144,6 +144,16 @@ func (c *Config) staticToken(tokenFile, devToken, devSessionURL string) error {
 			return errors.New("--session-url and --dev-session-url are the same setting; keep --session-url")
 		}
 		c.SessionURL = devSessionURL
+	}
+	if c.Command == "proxy" {
+		if c.Token != "" {
+			return errors.New("proxy holds no credential: each MCP client sends its own token; unset the static token")
+		}
+		plainHTTP := c.Net.AllowHTTP && strings.HasPrefix(c.SessionURL, "http://")
+		if !strings.HasPrefix(c.SessionURL, "https://") && !plainHTTP {
+			return errors.New("proxy needs --session-url, the https URL of the JMAP session of the mail server")
+		}
+		return nil
 	}
 	if (c.Token == "") != (c.SessionURL == "") {
 		return errors.New("a static token and --session-url go together")

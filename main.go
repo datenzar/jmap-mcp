@@ -17,6 +17,7 @@ import (
 
 	"github.com/kOlapsis/jmap-mcp/internal/config"
 	"github.com/kOlapsis/jmap-mcp/internal/httpd"
+	"github.com/kOlapsis/jmap-mcp/internal/proxy"
 	"github.com/kOlapsis/jmap-mcp/internal/stdio"
 )
 
@@ -55,6 +56,12 @@ func run() error {
 			return err
 		}
 		defer srv.Close()
+		return srv.Run(ctx)
+	case "proxy":
+		srv, err := proxy.New(cfg, version, log)
+		if err != nil {
+			return err
+		}
 		return srv.Run(ctx)
 	case "client":
 		issuer, err := stdio.AddClient(ctx, cfg, log)

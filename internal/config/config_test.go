@@ -100,6 +100,33 @@ func TestStaticToken(t *testing.T) {
 	}
 }
 
+func TestProxyConfig(t *testing.T) {
+	const url = "https://mail.example.test/jmap/session"
+	c, err := Parse([]string{"proxy", "--session-url", url}, io.Discard)
+	if err != nil || c.Command != "proxy" || c.SessionURL != url || c.Token != "" {
+		t.Fatalf("%+v %v", c, err)
+	}
+	for name, tc := range map[string]struct {
+		env  string
+		args []string
+		want string
+	}{
+		"no session url":    {args: []string{"proxy"}, want: "--session-url"},
+		"email instead":     {args: []string{"proxy", "--session-url", "alice@example.test"}, want: "--session-url"},
+		"plain http":        {args: []string{"proxy", "--session-url", "http://mail.example.test/jmap/session"}, want: "--session-url"},
+		"with static token": {env: "API_x", args: []string{"proxy", "--session-url", url}, want: "no credential"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if tc.env != "" {
+				t.Setenv(EnvPrefix+"TOKEN", tc.env)
+			}
+			if _, err := Parse(tc.args, io.Discard); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, tc.want)
+			}
+		})
+	}
+}
+
 func TestStatelessFlag(t *testing.T) {
 	t.Run("disabled by default", func(t *testing.T) {
 		t.Setenv(EnvPrefix+"STATELESS", "false")
