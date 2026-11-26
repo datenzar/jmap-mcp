@@ -27,6 +27,12 @@ All notable changes to this project are documented here. The format follows
 
 - `--dev-token` and `--dev-session-url`, replaced by the static token options above.
 
+### Fixed
+
+- Dynamic client registration with Stalwart 1.x, which refuses the device grant to dynamically
+  registered clients: the local mode registers again without it and then signs in through the
+  browser only.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added
