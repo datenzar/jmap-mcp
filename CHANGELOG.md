@@ -10,6 +10,12 @@ All notable changes to this project are documented here. The format follows
 
 - Optional stateless Streamable HTTP transport for `serve`, enabled with `--stateless` or
   `JMAP_MCP_STATELESS=true`.
+- Shared mail accounts: `list_accounts` lists the mail accounts each login can access besides its
+  own (mailboxes shared by other users, group mailboxes), and every tool accepts their name as
+  `account`.
+- Keywords: `update_emails` adds and removes keywords (`add_keywords`, `remove_keywords`), such as
+  the `$label:<name>` tags of Stalwart's webmail; `search_emails` filters on them (`keyword`,
+  `not_keyword`); summaries and messages list them.
 
 ## [0.3.0] - 2026-10-24
 

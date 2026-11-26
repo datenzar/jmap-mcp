@@ -19,8 +19,9 @@ import (
 
 func (s *Server) registerAccountTools() {
 	mcp.AddTool(s.Server, &mcp.Tool{
-		Name:        "list_accounts",
-		Description: "List the connected mail accounts and the default one. Pass set_default to change the default account.",
+		Name: "list_accounts",
+		Description: "List the connected mail accounts, the default one, and the shared mail accounts each can access (other users' mailboxes, " +
+			"groups); any of these names can be passed as \"account\" to the other tools. Pass set_default to change the default account.",
 		Annotations: &mcp.ToolAnnotations{Title: "List accounts", IdempotentHint: true},
 	}, handler(s.listAccounts))
 
@@ -49,13 +50,25 @@ func (s *Server) listAccounts(ctx context.Context, _ *mcp.CallToolRequest, in li
 	if err != nil {
 		return nil, err
 	}
+	type sharedView struct {
+		Name     string `json:"name"`
+		ReadOnly bool   `json:"read_only,omitempty"`
+	}
 	type view struct {
-		Email   string `json:"email"`
-		Default bool   `json:"default,omitempty"`
+		Email   string       `json:"email"`
+		Default bool         `json:"default,omitempty"`
+		Shared  []sharedView `json:"shared,omitempty"`
 	}
 	out := make([]view, 0, len(accts))
 	for _, a := range accts {
-		out = append(out, view{Email: a.Email, Default: a.Default || len(accts) == 1})
+		v := view{Email: a.Email, Default: a.Default || len(accts) == 1}
+		// A login whose session cannot be opened is still listed; its tools report the error.
+		if shared, err := sharedMailAccounts(ctx, a); err == nil {
+			for _, sh := range shared {
+				v.Shared = append(v.Shared, sharedView{Name: sh.Name, ReadOnly: sh.ReadOnly})
+			}
+		}
+		out = append(out, v)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Email < out[j].Email })
 	return text(map[string]any{"accounts": out}), nil
@@ -120,7 +133,7 @@ func (s *Server) registerIdentities() {
 }
 
 type listIdentitiesInput struct {
-	Account string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 }
 
 func (m *mailContext) identities(ctx context.Context) ([]*identity.Identity, error) {
@@ -159,7 +172,7 @@ func (s *Server) listIdentities(ctx context.Context, req *mcp.CallToolRequest, i
 	for _, i := range ids {
 		out = append(out, view{ID: string(i.ID), Name: i.Name, Email: i.Email, ReplyTo: mailview.Addresses(i.ReplyTo)})
 	}
-	return text(map[string]any{"account": m.acct.Email, "identities": out}), nil
+	return text(map[string]any{"account": m.name, "identities": out}), nil
 }
 
 func (s *Server) registerStatus() {

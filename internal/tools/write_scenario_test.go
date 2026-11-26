@@ -48,6 +48,21 @@ func writeScenario(t *testing.T, alice *Account, bob string, delivered func(subj
 		t.Fatalf("flags: %+v %+v", upd, search)
 	}
 
+	callJSON(t, modern, "update_emails", map[string]any{"ids": []string{report}, "add_keywords": []string{"$label:Invoices", "todo"}}, &upd)
+	callJSON(t, modern, "search_emails", map[string]any{"keyword": "$label:invoices"}, &search)
+	if upd.Updated != 1 || search.Total != 1 || strings.Join(search.Emails[0].Keywords, ",") != "$label:invoices,todo" ||
+		strings.Join(search.Emails[0].Flags, ",") != "flagged" {
+		t.Fatalf("add keywords, keeping read and flagged: %+v %+v", upd, search)
+	}
+	callJSON(t, modern, "update_emails", map[string]any{"ids": []string{report}, "remove_keywords": []string{"TODO"}}, &upd)
+	callJSON(t, modern, "search_emails", map[string]any{"keyword": "$label:invoices", "not_keyword": "todo"}, &search)
+	if search.Total != 1 || strings.Join(search.Emails[0].Keywords, ",") != "$label:invoices" || strings.Join(search.Emails[0].Flags, ",") != "flagged" {
+		t.Fatalf("remove keyword: %+v", search)
+	}
+	if txt, isErr := call(t, modern, "update_emails", map[string]any{"ids": []string{report}, "add_keywords": []string{"two words"}}); !isErr || !strings.Contains(txt, "invalid keyword") {
+		t.Fatalf("invalid keyword accepted: %s", txt)
+	}
+
 	var moved struct{ Mailbox string }
 	callJSON(t, modern, "move_emails", map[string]any{"ids": []string{report}, "mailbox": "junk"}, &moved)
 	callJSON(t, modern, "search_emails", map[string]any{"mailbox": "junk"}, &search)

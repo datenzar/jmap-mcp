@@ -33,6 +33,7 @@ type Summary struct {
 	Subject     string   `json:"subject"`
 	Preview     string   `json:"preview,omitempty"`
 	Flags       []string `json:"flags,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
 	Mailboxes   []string `json:"mailboxes,omitempty"`
 	Attachments int      `json:"attachments,omitempty"`
 	Size        uint64   `json:"size,omitempty"`
@@ -52,6 +53,7 @@ type Message struct {
 	Thread        string       `json:"thread"`
 	Mailboxes     []string     `json:"mailboxes,omitempty"`
 	Flags         []string     `json:"flags,omitempty"`
+	Keywords      []string     `json:"keywords,omitempty"`
 	ReceivedAt    string       `json:"received_at,omitempty"`
 	SentAt        string       `json:"sent_at,omitempty"`
 	From          []string     `json:"from,omitempty"`
@@ -111,6 +113,24 @@ func Flags(kw map[string]bool) []string {
 	return out
 }
 
+// systemKeywords are the keywords already reported by Flags, or set by the server rather than the user.
+var systemKeywords = map[string]bool{
+	"$seen": true, "$flagged": true, "$draft": true, "$answered": true, "$forwarded": true, "$junk": true,
+	"$notjunk": true, "$phishing": true, "$mdnsent": true, "$hasattachment": true, "$hasnoattachment": true,
+}
+
+// Keywords lists the other keywords of an email, such as user tags ("$label:invoices" in Stalwart's webmail).
+func Keywords(kw map[string]bool) []string {
+	var out []string
+	for k, set := range kw {
+		if set && !systemKeywords[strings.ToLower(k)] {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // MailboxNames maps the ids of an email to mailbox names.
 func MailboxNames(ids map[jmap.ID]bool, names map[jmap.ID]string) []string {
 	var out []string
@@ -145,6 +165,7 @@ func Summarize(e *email.Email, mailboxes map[jmap.ID]string) Summary {
 		Subject:     e.Subject,
 		Preview:     e.Preview,
 		Flags:       Flags(e.Keywords),
+		Keywords:    Keywords(e.Keywords),
 		Mailboxes:   MailboxNames(e.MailboxIDs, mailboxes),
 		Attachments: len(e.Attachments),
 		Size:        e.Size,
@@ -165,6 +186,7 @@ func Full(e *email.Email, mailboxes map[jmap.ID]string, maxChars int) Message {
 		Thread:     string(e.ThreadID),
 		Mailboxes:  MailboxNames(e.MailboxIDs, mailboxes),
 		Flags:      Flags(e.Keywords),
+		Keywords:   Keywords(e.Keywords),
 		ReceivedAt: date(e.ReceivedAt),
 		SentAt:     date(e.SentAt),
 		From:       Addresses(e.From),

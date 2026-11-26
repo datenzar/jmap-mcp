@@ -6,38 +6,143 @@
   "request": {
     "using": [
       "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:sieve"
+      "urn:ietf:params:jmap:mail"
     ],
     "methodCalls": [
       [
-        "SieveScript/get",
+        "Email/query",
         {
-          "accountId": "c"
+          "accountId": "c",
+          "filter": {
+            "inMailbox": "e"
+          },
+          "sort": [
+            {
+              "property": "receivedAt",
+              "isAscending": false
+            }
+          ],
+          "limit": 20,
+          "calculateTotal": true
         },
         "0"
+      ],
+      [
+        "Email/get",
+        {
+          "accountId": "c",
+          "properties": [
+            "id",
+            "threadId",
+            "mailboxIds",
+            "keywords",
+            "receivedAt",
+            "from",
+            "to",
+            "subject",
+            "preview",
+            "hasAttachment",
+            "attachments",
+            "size"
+          ],
+          "bodyProperties": [
+            "blobId"
+          ],
+          "#ids": {
+            "resultOf": "0",
+            "name": "Email/query",
+            "path": "/ids"
+          }
+        },
+        "1"
       ]
     ]
   },
   "response": {
     "methodResponses": [
       [
-        "SieveScript/get",
+        "Email/query",
         {
           "accountId": "c",
-          "state": "sc2",
+          "queryState": "sda",
+          "canCalculateChanges": true,
+          "position": 0,
+          "ids": [
+            "baaaaaai",
+            "beaaaaaj"
+          ],
+          "total": 2
+        },
+        "0"
+      ],
+      [
+        "Email/get",
+        {
+          "accountId": "c",
+          "state": "sda",
           "list": [
             {
-              "id": "b",
-              "name": "vacation",
-              "blobId": "cffl371evjql1zja0aiunlnutlt1qpfhorq9kxlhcd0sri02jccv1aqfaeapgai",
-              "isActive": true
+              "id": "baaaaaai",
+              "threadId": "i",
+              "mailboxIds": {
+                "e": true
+              },
+              "keywords": {
+                "$seen": true
+              },
+              "receivedAt": "2026-11-26T08:39:48Z",
+              "from": [
+                {
+                  "name": "alice@example.test",
+                  "email": "alice@example.test"
+                }
+              ],
+              "to": [
+                {
+                  "name": "Bob",
+                  "email": "bob@example.test"
+                }
+              ],
+              "subject": "Lunch?",
+              "preview": "Noon?",
+              "hasAttachment": false,
+              "attachments": [],
+              "size": 321
+            },
+            {
+              "id": "beaaaaaj",
+              "threadId": "j",
+              "mailboxIds": {
+                "e": true
+              },
+              "keywords": {
+                "$seen": true
+              },
+              "receivedAt": "2026-11-26T08:39:48Z",
+              "from": [
+                {
+                  "name": "alice@example.test",
+                  "email": "alice@example.test"
+                }
+              ],
+              "to": [
+                {
+                  "name": null,
+                  "email": "bob@example.test"
+                }
+              ],
+              "subject": "Draft then send",
+              "preview": "Hello",
+              "hasAttachment": false,
+              "attachments": [],
+              "size": 324
             }
           ],
           "notFound": []
         },
-        "0"
+        "1"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

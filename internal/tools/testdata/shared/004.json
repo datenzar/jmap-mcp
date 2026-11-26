@@ -1,0 +1,61 @@
+{
+  "method": "POST",
+  "path": "/jmap/",
+  "status": 200,
+  "content_type": "application/json; charset=utf-8",
+  "request": {
+    "using": [
+      "urn:ietf:params:jmap:core",
+      "urn:ietf:params:jmap:mail"
+    ],
+    "methodCalls": [
+      [
+        "Mailbox/get",
+        {
+          "accountId": "d"
+        },
+        "0"
+      ]
+    ]
+  },
+  "response": {
+    "methodResponses": [
+      [
+        "Mailbox/get",
+        {
+          "accountId": "d",
+          "state": "sba",
+          "list": [
+            {
+              "id": "a",
+              "name": "Inbox",
+              "parentId": null,
+              "role": "inbox",
+              "sortOrder": 0,
+              "isSubscribed": false,
+              "totalEmails": 6,
+              "unreadEmails": 6,
+              "totalThreads": 5,
+              "unreadThreads": 5,
+              "myRights": {
+                "mayReadItems": true,
+                "mayAddItems": false,
+                "mayRemoveItems": false,
+                "maySetSeen": true,
+                "maySetKeywords": true,
+                "mayCreateChild": false,
+                "mayRename": false,
+                "maySubmit": false,
+                "mayDelete": false,
+                "mayShare": false
+              }
+            }
+          ],
+          "notFound": []
+        },
+        "0"
+      ]
+    ],
+    "sessionState": "8e5aa8ec"
+  }
+}

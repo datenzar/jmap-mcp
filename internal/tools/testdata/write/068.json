@@ -1,41 +1,7 @@
 {
-  "method": "POST",
-  "path": "/jmap/",
+  "method": "GET",
+  "path": "/jmap/download/c/cgksniwutpd9zowz0elqtyj9bd2bmqaxhuw7h0vsqgrsudai1mao7aqfaiafo/newsletters.sieve",
   "status": 200,
-  "content_type": "application/json; charset=utf-8",
-  "request": {
-    "using": [
-      "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:sieve"
-    ],
-    "methodCalls": [
-      [
-        "SieveScript/set",
-        {
-          "accountId": "c",
-          "destroy": [
-            "c"
-          ]
-        },
-        "0"
-      ]
-    ]
-  },
-  "response": {
-    "methodResponses": [
-      [
-        "SieveScript/set",
-        {
-          "accountId": "c",
-          "oldState": "sda",
-          "newState": "sde",
-          "destroyed": [
-            "c"
-          ]
-        },
-        "0"
-      ]
-    ],
-    "sessionState": "606ebb50"
-  }
+  "content_type": "application/sieve",
+  "body": "cmVxdWlyZSAiZmlsZWludG8iOwppZiBoZWFkZXIgOmNvbnRhaW5zICJzdWJqZWN0IiAibmV3c2xldHRlciIgeyBmaWxlaW50byAiQXJjaGl2ZSI7IH0K"
 }

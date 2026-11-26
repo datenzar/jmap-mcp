@@ -23,12 +23,14 @@ golangci-lint run ./...
 Integration tests start a disposable Stalwart container, configure it through its API and run the
 real OAuth flows. Set `JMAP_MCP_KEEP_CONTAINER=1` to keep the container for inspection.
 
-When a change alters the JMAP requests of the read or write scenarios, refresh the recorded
-exchanges used by the unit tests:
+When a change alters the JMAP requests of the read, write or shared account scenarios, refresh the
+recorded exchanges used by the unit tests. Remove the old files first, but keep the directory: the
+recorder does not create it.
 
 ```sh
-JMAP_MCP_RECORD=$PWD/internal/tools/testdata/read  go test -tags integration -run TestStalwartReadTools  ./internal/tools
-JMAP_MCP_RECORD=$PWD/internal/tools/testdata/write go test -tags integration -run TestStalwartWriteTools ./internal/tools
+JMAP_MCP_RECORD=$PWD/internal/tools/testdata/read   go test -tags integration -run TestStalwartReadTools     ./internal/tools
+JMAP_MCP_RECORD=$PWD/internal/tools/testdata/write  go test -tags integration -run TestStalwartWriteTools    ./internal/tools
+JMAP_MCP_RECORD=$PWD/internal/tools/testdata/shared go test -tags integration -run TestStalwartSharedAccount ./internal/tools
 ```
 
 ## Pull requests

@@ -38,6 +38,16 @@ func TestFlags(t *testing.T) {
 	}
 }
 
+func TestKeywords(t *testing.T) {
+	got := Keywords(map[string]bool{"$seen": true, "$flagged": true, "$HasNoAttachment": true, "$label:invoices": true, "todo": true, "gone": false})
+	if strings.Join(got, ",") != "$label:invoices,todo" {
+		t.Errorf("keywords = %v", got)
+	}
+	if got := Keywords(map[string]bool{"$seen": true}); got != nil {
+		t.Errorf("keywords = %v, want none", got)
+	}
+}
+
 func TestFullConvertsHTMLAndTruncates(t *testing.T) {
 	now := time.Date(2026, 10, 6, 10, 0, 0, 0, time.FixedZone("x", 3600))
 	e := &email.Email{

@@ -6,13 +6,21 @@
   "request": {
     "using": [
       "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:submission"
+      "urn:ietf:params:jmap:mail"
     ],
     "methodCalls": [
       [
-        "Identity/get",
+        "Email/get",
         {
-          "accountId": "c"
+          "accountId": "c",
+          "ids": [
+            "eaaaaab"
+          ],
+          "properties": [
+            "id",
+            "subject",
+            "from"
+          ]
         },
         "0"
       ]
@@ -21,20 +29,20 @@
   "response": {
     "methodResponses": [
       [
-        "Identity/get",
+        "Email/get",
         {
           "accountId": "c",
           "state": "sb2",
           "list": [
             {
-              "id": "b",
-              "name": "alice@example.test",
-              "email": "alice@example.test",
-              "replyTo": null,
-              "bcc": null,
-              "textSignature": "",
-              "htmlSignature": "",
-              "mayDelete": true
+              "id": "eaaaaab",
+              "subject": "Quarterly report",
+              "from": [
+                {
+                  "name": "Bob Martin",
+                  "email": "bob@example.org"
+                }
+              ]
             }
           ],
           "notFound": []
@@ -42,6 +50,6 @@
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

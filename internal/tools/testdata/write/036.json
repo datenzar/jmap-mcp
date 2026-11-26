@@ -1,47 +1,13 @@
 {
   "method": "POST",
-  "path": "/jmap/",
+  "path": "/jmap/upload/c/",
   "status": 200,
   "content_type": "application/json; charset=utf-8",
-  "request": {
-    "using": [
-      "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:submission"
-    ],
-    "methodCalls": [
-      [
-        "Identity/get",
-        {
-          "accountId": "c"
-        },
-        "0"
-      ]
-    ]
-  },
+  "request_body": "MS4gU2NvcGUKMi4gUGxhbm5pbmcK",
   "response": {
-    "methodResponses": [
-      [
-        "Identity/get",
-        {
-          "accountId": "c",
-          "state": "sb2",
-          "list": [
-            {
-              "id": "b",
-              "name": "alice@example.test",
-              "email": "alice@example.test",
-              "replyTo": null,
-              "bcc": null,
-              "textSignature": "",
-              "htmlSignature": "",
-              "mayDelete": true
-            }
-          ],
-          "notFound": []
-        },
-        "0"
-      ]
-    ],
-    "sessionState": "606ebb50"
+    "accountId": "c",
+    "blobId": "ed3eazvl0knf0fcockeihpvgucularrlciappke97lmpahza2rqd7axe3sp0qbq",
+    "type": "text/plain; charset=utf-8",
+    "size": 21
   }
 }

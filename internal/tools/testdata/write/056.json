@@ -6,38 +6,72 @@
   "request": {
     "using": [
       "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:sieve"
+      "urn:ietf:params:jmap:mail",
+      "urn:ietf:params:jmap:vacationresponse"
     ],
     "methodCalls": [
       [
-        "SieveScript/get",
+        "VacationResponse/set",
         {
-          "accountId": "c"
+          "accountId": "c",
+          "update": {
+            "singleton": {
+              "isEnabled": true,
+              "subject": "Away",
+              "textBody": "Back on Monday",
+              "toDate": "2026-12-01T00:00:00Z"
+            }
+          }
         },
         "0"
+      ],
+      [
+        "VacationResponse/get",
+        {
+          "accountId": "c",
+          "ids": [
+            "singleton"
+          ]
+        },
+        "1"
       ]
     ]
   },
   "response": {
     "methodResponses": [
       [
-        "SieveScript/get",
+        "VacationResponse/set",
         {
           "accountId": "c",
-          "state": "sc2",
+          "oldState": "n",
+          "newState": "sde",
+          "updated": {
+            "singleton": null
+          }
+        },
+        "0"
+      ],
+      [
+        "VacationResponse/get",
+        {
+          "accountId": "c",
+          "state": "sde",
           "list": [
             {
-              "id": "b",
-              "name": "vacation",
-              "blobId": "cffl371evjql1zja0aiunlnutlt1qpfhorq9kxlhcd0sri02jccv1aqfaeapgai",
-              "isActive": true
+              "id": "singleton",
+              "isEnabled": true,
+              "fromDate": null,
+              "toDate": "2026-12-01T00:00:00Z",
+              "subject": "Away",
+              "textBody": "Back on Monday",
+              "htmlBody": null
             }
           ],
           "notFound": []
         },
-        "0"
+        "1"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

@@ -26,7 +26,7 @@ func (s *Server) registerVacation() {
 }
 
 type vacationInput struct {
-	Account  string  `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account  string  `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	Enabled  *bool   `json:"enabled,omitempty" jsonschema:"turn the automatic reply on or off"`
 	Subject  *string `json:"subject,omitempty" jsonschema:"subject of the reply"`
 	TextBody *string `json:"text_body,omitempty" jsonschema:"plain-text body of the reply"`
@@ -78,7 +78,7 @@ func (s *Server) vacation(ctx context.Context, req *mcp.CallToolRequest, in vaca
 		for _, k := range keys {
 			lines = append(lines, fmt.Sprintf("%s: %v", k, patch[k]))
 		}
-		msg := fmt.Sprintf("Change the automatic reply of %s? It is sent to everyone who writes to you.\n%s", m.acct.Email, strings.Join(lines, "\n"))
+		msg := fmt.Sprintf("Change the automatic reply of %s? It is sent to everyone who writes to you.\n%s", m.name, strings.Join(lines, "\n"))
 		if res, err := confirmOrArg(ctx, d, "confirm_vacation", msg, in.Confirm, "Changing the automatic reply"); err != nil || res != nil {
 			return res, err
 		}
@@ -110,7 +110,7 @@ func (s *Server) vacation(ctx context.Context, req *mcp.CallToolRequest, in vaca
 		return nil, errors.New("the server returned no vacation response")
 	}
 	v := g.List[0]
-	out := map[string]any{"account": m.acct.Email, "enabled": v.IsEnabled}
+	out := map[string]any{"account": m.name, "enabled": v.IsEnabled}
 	if v.Subject != nil {
 		out["subject"] = *v.Subject
 	}
@@ -136,7 +136,7 @@ func (s *Server) registerSieve() {
 }
 
 type sieveInput struct {
-	Account  string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account  string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	Action   string `json:"action" jsonschema:"list, get, put, activate, deactivate or delete"`
 	ID       string `json:"id,omitempty" jsonschema:"script id, for get, put (replace), activate and delete"`
 	Name     string `json:"name,omitempty" jsonschema:"script name, for put"`
@@ -173,7 +173,7 @@ func (s *Server) sieve(ctx context.Context, req *mcp.CallToolRequest, in sieveIn
 		for _, sc := range scripts {
 			out = append(out, map[string]any{"id": sc.ID, "name": deref(sc.Name), "active": sc.IsActive})
 		}
-		return text(map[string]any{"account": m.acct.Email, "scripts": out}), nil
+		return text(map[string]any{"account": m.name, "scripts": out}), nil
 	case "get":
 		sc, err := find()
 		if err != nil {
@@ -201,23 +201,23 @@ func (s *Server) sieve(ctx context.Context, req *mcp.CallToolRequest, in sieveIn
 		if in.Content == "" || (in.Name == "" && in.ID == "") {
 			return nil, errors.New("put needs content and a name (or the id of the script to replace)")
 		}
-		msg = fmt.Sprintf("Save the Sieve script %q on %s%s?\n\n%s", in.Name, m.acct.Email, map[bool]string{true: " and make it active", false: ""}[in.Activate], in.Content)
+		msg = fmt.Sprintf("Save the Sieve script %q on %s%s?\n\n%s", in.Name, m.name, map[bool]string{true: " and make it active", false: ""}[in.Activate], in.Content)
 	case "activate":
 		sc, err := find()
 		if err != nil {
 			return nil, err
 		}
-		msg = fmt.Sprintf("Activate the Sieve script %q on %s?", deref(sc.Name), m.acct.Email)
+		msg = fmt.Sprintf("Activate the Sieve script %q on %s?", deref(sc.Name), m.name)
 		set.OnSuccessActivateScript = &sc.ID
 	case "deactivate":
-		msg = fmt.Sprintf("Deactivate the active Sieve script on %s?", m.acct.Email)
+		msg = fmt.Sprintf("Deactivate the active Sieve script on %s?", m.name)
 		set.OnSuccessDeactivateScript = true
 	case "delete":
 		sc, err := find()
 		if err != nil {
 			return nil, err
 		}
-		msg = fmt.Sprintf("Delete the Sieve script %q from %s? This cannot be undone.", deref(sc.Name), m.acct.Email)
+		msg = fmt.Sprintf("Delete the Sieve script %q from %s? This cannot be undone.", deref(sc.Name), m.name)
 		set.Destroy = []jmap.ID{sc.ID}
 	}
 	if res, err := confirmOrArg(ctx, d, "confirm_sieve", msg, in.Confirm, "Changing filtering rules"); err != nil || res != nil {

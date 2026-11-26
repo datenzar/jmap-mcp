@@ -190,10 +190,9 @@ func (s *Stalwart) JMAP(t testing.TB, user, password string, calls []any) [][]js
 	return out.MethodResponses
 }
 
-// Seed imports RFC 5322 messages into the inbox of user and returns their ids in order.
-func (s *Stalwart) Seed(t testing.TB, user, password string, messages ...string) []string {
+// inbox returns the id of the inbox of user's account.
+func (s *Stalwart) inbox(t testing.TB, user, password, accountID string) string {
 	t.Helper()
-	accountID := s.AccountID(t, user, password)
 	res := s.JMAP(t, user, password, []any{[]any{"Mailbox/get", map[string]any{"accountId": accountID}, "m"}})
 	var mbs struct {
 		List []struct {
@@ -202,15 +201,36 @@ func (s *Stalwart) Seed(t testing.TB, user, password string, messages ...string)
 		} `json:"list"`
 	}
 	_ = json.Unmarshal(res[0][1], &mbs)
-	inbox := ""
 	for _, m := range mbs.List {
 		if m.Role == "inbox" {
-			inbox = m.ID
+			return m.ID
 		}
 	}
-	if inbox == "" {
-		t.Fatalf("no inbox for %s: %s", user, res[0][1])
+	t.Fatalf("no inbox for %s: %s", user, res[0][1])
+	return ""
+}
+
+// ShareInbox lets sharee read owner's inbox and change its keywords, so that owner's account
+// appears as a shared account in the session of sharee.
+func (s *Stalwart) ShareInbox(t testing.TB, owner, ownerPassword, sharee, shareePassword string) {
+	t.Helper()
+	ownerID := s.AccountID(t, owner, ownerPassword)
+	shareeID := s.AccountID(t, sharee, shareePassword)
+	res := s.JMAP(t, owner, ownerPassword, []any{[]any{"Mailbox/set", map[string]any{"accountId": ownerID, "update": map[string]any{
+		s.inbox(t, owner, ownerPassword, ownerID): map[string]any{"shareWith/" + shareeID: map[string]any{
+			"mayReadItems": true, "maySetSeen": true, "maySetKeywords": true,
+		}},
+	}}, "s"}})
+	if !bytes.Contains(res[0][1], []byte(`"updated"`)) || bytes.Contains(res[0][1], []byte(`"notUpdated":{"`)) {
+		t.Fatalf("share inbox of %s with %s: %s", owner, sharee, res[0][1])
 	}
+}
+
+// Seed imports RFC 5322 messages into the inbox of user and returns their ids in order.
+func (s *Stalwart) Seed(t testing.TB, user, password string, messages ...string) []string {
+	t.Helper()
+	accountID := s.AccountID(t, user, password)
+	inbox := s.inbox(t, user, password, accountID)
 	imports := map[string]any{}
 	for i, msg := range messages {
 		req, _ := http.NewRequest(http.MethodPost, "https://"+s.Addr+"/jmap/upload/"+accountID+"/", strings.NewReader(strings.ReplaceAll(msg, "\n", "\r\n")))
@@ -233,7 +253,7 @@ func (s *Stalwart) Seed(t testing.TB, user, password string, messages ...string)
 		}
 		imports[fmt.Sprint(i)] = entry
 	}
-	res = s.JMAP(t, user, password, []any{[]any{"Email/import", map[string]any{"accountId": accountID, "emails": imports}, "i"}})
+	res := s.JMAP(t, user, password, []any{[]any{"Email/import", map[string]any{"accountId": accountID, "emails": imports}, "i"}})
 	var imp struct {
 		Created    map[string]struct{ ID string } `json:"created"`
 		NotCreated map[string]any                 `json:"notCreated"`

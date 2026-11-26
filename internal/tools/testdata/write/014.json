@@ -10,14 +10,14 @@
     ],
     "methodCalls": [
       [
-        "Mailbox/set",
+        "Email/set",
         {
           "accountId": "c",
-          "create": {
-            "new": {
-              "name": "2026",
-              "parentId": "h",
-              "isSubscribed": true
+          "update": {
+            "eaaaaab": {
+              "mailboxIds": {
+                "c": true
+              }
             }
           }
         },
@@ -28,20 +28,18 @@
   "response": {
     "methodResponses": [
       [
-        "Mailbox/set",
+        "Email/set",
         {
           "accountId": "c",
           "oldState": "sbi",
           "newState": "sbm",
-          "created": {
-            "new": {
-              "id": "i"
-            }
+          "updated": {
+            "eaaaaab": null
           }
         },
         "0"
       ]
     ],
-    "sessionState": "606ebb50"
+    "sessionState": "56c44231"
   }
 }

@@ -96,8 +96,8 @@ func (s *Server) registerReadTools() {
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name: "search_emails",
-		Description: "Search emails by text, sender, recipient, subject, mailbox, date range, unread or flagged state, attachments and size. " +
-			"Returns compact summaries (id, thread, date, from, subject, preview, flags, attachment count) with pagination." + untrusted,
+		Description: "Search emails by text, sender, recipient, subject, mailbox, date range, unread or flagged state, keyword, attachments and size. " +
+			"Returns compact summaries (id, thread, date, from, subject, preview, flags, keywords, attachment count) with pagination." + untrusted,
 		Annotations: readOnly("Search emails"),
 	}, handler(s.searchEmails))
 
@@ -123,7 +123,7 @@ func (s *Server) registerReadTools() {
 }
 
 type listMailboxesInput struct {
-	Account string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 }
 
 type mailboxView struct {
@@ -149,11 +149,11 @@ func (s *Server) listMailboxes(ctx context.Context, req *mcp.CallToolRequest, in
 		out = append(out, mailboxView{ID: string(mb.ID), Path: paths[mb.ID], Role: string(mb.Role), Total: mb.TotalEmails, Unread: mb.UnreadEmails})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
-	return text(map[string]any{"account": m.acct.Email, "mailboxes": out}), nil
+	return text(map[string]any{"account": m.name, "mailboxes": out}), nil
 }
 
 type searchInput struct {
-	Account       string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account       string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	Text          string `json:"text,omitempty" jsonschema:"full-text search in headers and body"`
 	From          string `json:"from,omitempty" jsonschema:"sender address or name contains"`
 	To            string `json:"to,omitempty" jsonschema:"recipient (To, Cc or Bcc) contains"`
@@ -163,6 +163,8 @@ type searchInput struct {
 	Before        string `json:"before,omitempty" jsonschema:"received before this date (YYYY-MM-DD or RFC 3339)"`
 	Unread        *bool  `json:"unread,omitempty" jsonschema:"true for unread emails only, false for read emails only"`
 	Flagged       *bool  `json:"flagged,omitempty" jsonschema:"true for flagged emails only, false for unflagged only"`
+	Keyword       string `json:"keyword,omitempty" jsonschema:"only emails with this keyword, for example $label:invoices"`
+	NotKeyword    string `json:"not_keyword,omitempty" jsonschema:"only emails without this keyword"`
 	HasAttachment bool   `json:"has_attachment,omitempty" jsonschema:"only emails with attachments"`
 	MinSize       uint64 `json:"min_size,omitempty" jsonschema:"minimum size in bytes"`
 	MaxSize       uint64 `json:"max_size,omitempty" jsonschema:"maximum size in bytes"`
@@ -241,6 +243,19 @@ func (s *Server) searchEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 	}
 	keyword("$seen", in.Unread, true)
 	keyword("$flagged", in.Flagged, false)
+	for _, kw := range []struct {
+		value string
+		has   bool
+	}{{in.Keyword, true}, {in.NotKeyword, false}} {
+		if kw.value == "" {
+			continue
+		}
+		n, err := normalizeKeyword(kw.value)
+		if err != nil {
+			return nil, err
+		}
+		keyword(n, &kw.has, false)
+	}
 	var filter email.Filter = cond
 	if len(conds) > 1 {
 		filter = &email.FilterOperator{Operator: jmap.OperatorAND, Conditions: conds}
@@ -275,7 +290,7 @@ func (s *Server) searchEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 			out = append(out, mailview.Summarize(e, paths))
 		}
 	}
-	result := map[string]any{"account": m.acct.Email, "position": q.Position, "total": q.Total, "emails": out}
+	result := map[string]any{"account": m.name, "position": q.Position, "total": q.Total, "emails": out}
 	if next := q.Position + uint64(len(q.IDs)); next < q.Total {
 		result["next_position"] = next
 	}
@@ -283,7 +298,7 @@ func (s *Server) searchEmails(ctx context.Context, req *mcp.CallToolRequest, in 
 }
 
 type getEmailInput struct {
-	Account       string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account       string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	ID            string `json:"id" jsonschema:"email id"`
 	MaxBodyLength int    `json:"max_body_length,omitempty" jsonschema:"maximum body length in characters, default 10000"`
 }
@@ -342,7 +357,7 @@ func (s *Server) getEmail(ctx context.Context, req *mcp.CallToolRequest, in getE
 }
 
 type getThreadInput struct {
-	Account       string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account       string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	ThreadID      string `json:"thread_id" jsonschema:"thread id (the thread field of an email)"`
 	Full          bool   `json:"full,omitempty" jsonschema:"return complete messages instead of summaries"`
 	MaxBodyLength int    `json:"max_body_length,omitempty" jsonschema:"with full=true, maximum body length per message in characters, default 10000"`
@@ -422,7 +437,7 @@ func (s *Server) getThread(ctx context.Context, req *mcp.CallToolRequest, in get
 }
 
 type getAttachmentInput struct {
-	Account      string `json:"account,omitempty" jsonschema:"email address of the connected account to use; defaults to the default account"`
+	Account      string `json:"account,omitempty" jsonschema:"connected account (email address), or a shared mail account listed by list_accounts; defaults to the default account"`
 	EmailID      string `json:"email_id" jsonschema:"id of the email holding the attachment"`
 	AttachmentID string `json:"attachment_id" jsonschema:"attachment id as listed by get_email"`
 	MaxLength    int    `json:"max_length,omitempty" jsonschema:"for text attachments, maximum length in characters, default 10000"`

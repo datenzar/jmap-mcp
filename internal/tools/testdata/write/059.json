@@ -1,49 +1,13 @@
 {
   "method": "POST",
-  "path": "/jmap/",
+  "path": "/jmap/upload/c/",
   "status": 200,
   "content_type": "application/json; charset=utf-8",
-  "request": {
-    "using": [
-      "urn:ietf:params:jmap:core",
-      "urn:ietf:params:jmap:sieve"
-    ],
-    "methodCalls": [
-      [
-        "SieveScript/set",
-        {
-          "accountId": "c",
-          "create": {
-            "new": {
-              "name": "newsletters",
-              "blobId": "edknvyopkkglsxnau2kvit2bdndxgpgwcmnnqftxyistjbirpnwvuauz79x0mbq"
-            }
-          },
-          "onSuccessActivateScript": "#new"
-        },
-        "0"
-      ]
-    ]
-  },
+  "request_body": "aWYgYnJva2VuIHs=",
   "response": {
-    "methodResponses": [
-      [
-        "SieveScript/set",
-        {
-          "accountId": "c",
-          "oldState": "sc2",
-          "newState": "sda",
-          "created": {
-            "new": {
-              "id": "c",
-              "blobId": "cgksniwutpd9zowz0elqtyj9bd2bmqaxhuw7h0vsqgrsudai1mao7aqfaiafo",
-              "isActive": true
-            }
-          }
-        },
-        "0"
-      ]
-    ],
-    "sessionState": "606ebb50"
+    "accountId": "c",
+    "blobId": "edx9utwusjxu7yxdvtowy2wtrplbbq2ro2ey0zgowhgjscpt1kpicaxe3sp0qbq",
+    "type": "application/sieve",
+    "size": 11
   }
 }
