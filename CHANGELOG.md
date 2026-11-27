@@ -33,6 +33,13 @@ All notable changes to this project are documented here. The format follows
   registered clients: the local mode registers again without it and then signs in through the
   browser only.
 
+### Fixed
+
+- ChatGPT could not connect to `serve`: its Client ID Metadata Document prefers `private_key_jwt`
+  but also lists `none` in `token_endpoint_auth_methods_supported` (MCP SEP-3149), and the bridge
+  rejected it as an unknown application. Such documents are now served as public clients with PKCE,
+  unless they name a loopback redirect address.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added
